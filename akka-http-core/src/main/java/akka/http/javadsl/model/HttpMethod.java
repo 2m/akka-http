@@ -10,7 +10,7 @@ package akka.http.javadsl.model;
  *
  * @see HttpMethods for convenience access to often used values.
  */
-public abstract class HttpMethod {
+public abstract class HttpMethod extends HttpHeader {
 
     /**
      * Returns the name of the method, always equal to [[value]].

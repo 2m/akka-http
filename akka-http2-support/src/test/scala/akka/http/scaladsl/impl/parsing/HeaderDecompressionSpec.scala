@@ -1,5 +1,6 @@
 package akka.http.scaladsl.impl.parsing
 
+import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model2.HeadersFrame
 import akka.stream.ActorMaterializer
@@ -30,6 +31,19 @@ class HeaderDecompressionSpec extends AkkaSpec with ScalaFutures {
           .runWith(Sink.seq)
           .futureValue
       decompressedHeaders should contain(RawHeader(onlyHeader._1, onlyHeader._2))
+    }
+    "decompress spec-example-2 to GET HttpMethod" in {
+      val headerBlock = "82".replace(" ", "")
+
+      val bytes = ByteString(HexUtil.decodeHex(headerBlock.toCharArray))
+      val frame = HeadersFrame(0, false, 1, 0, bytes)
+
+      val decompressedHeaders =
+        Source.single(frame)
+          .via(new HeaderDecompression)
+          .runWith(Sink.seq)
+          .futureValue
+      decompressedHeaders should contain(HttpMethods.GET)
     }
 
     // FIXME: should test data spanning over multiple Headers frames (to make sure we handle completion properly) 

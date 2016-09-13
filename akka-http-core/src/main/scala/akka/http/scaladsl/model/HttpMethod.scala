@@ -37,6 +37,12 @@ final case class HttpMethod private[http] (
   override def isEntityAccepted: Boolean = requestEntityAcceptance.isEntityAccepted
   override def toString: String = s"HttpMethod($value)"
   override def getRequestEntityAcceptance: jm.RequestEntityAcceptance = requestEntityAcceptance
+
+  override def lowercaseName(): String = "method"
+  override def is(nameInLowerCase: String): Boolean = nameInLowerCase == lowercaseName
+  override def isNot(nameInLowerCase: String): Boolean = nameInLowerCase != lowercaseName
+  override def renderInRequests(): Boolean = true
+  override def renderInResponses(): Boolean = false
 }
 
 object HttpMethod {

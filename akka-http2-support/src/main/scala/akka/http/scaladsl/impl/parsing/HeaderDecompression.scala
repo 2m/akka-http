@@ -1,6 +1,6 @@
 package akka.http.scaladsl.impl.parsing
 
-import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.model.{ HttpHeader, HttpMethod, HttpMethods }
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model2.HeadersFrame
 import akka.stream.stage._
@@ -16,6 +16,8 @@ final class HeaderDecompression extends GraphStage[FlowShape[HeadersFrame, HttpH
   final val name = "name".getBytes()
   final val value = "value".getBytes()
   final val sensitive = false
+
+  private final val ColonByte = ':'.toByte
 
   val in = Inlet[HeadersFrame]("HeaderDecompression.in")
   val out = Outlet[HttpHeader]("HeaderDecompression.out")
@@ -47,7 +49,20 @@ final class HeaderDecompression extends GraphStage[FlowShape[HeadersFrame, HttpH
       }
 
       override def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit = {
-        val header = RawHeader(new String(name), new String(value))
+        val nameString = new String(name) // FIXME wasteful :-(
+        println("name.toList = " + nameString)
+
+        val header: HttpHeader =
+          if (name.head == ColonByte)
+            // FIXME this must be optimised
+            nameString match {
+              //              case ":method" ⇒ HttpMethods.getForKeyCaseInsensitive(new String(value)).get // TODO how should we handle this?
+              case ":path" ⇒ RawHeader(nameString, new String(value))
+              case unknown ⇒
+                throw new Exception(s": prefixed header should be emitted well-typed! Was: '${new String(unknown)}'. This is a bug.")
+            }
+          else RawHeader(nameString, new String(value))
+
         push(out, header)
       }
     }
