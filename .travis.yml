@@ -12,9 +12,21 @@ language: scala
 jdk:
   - oraclejdk8
 
+env:
+  matrix:
+    - SBT_CMD="akka-http-core/test"
+    - SBT_CMD="akka-http-jackson/test"
+    - SBT_CMD="akka-http-marshallers-java/test"
+    - SBT_CMD="akka-http-marshallers-scala/test"
+    - SBT_CMD="akka-http-spray-json/test"
+    - SBT_CMD="akka-http-testkit/test"
+    - SBT_CMD="akka-http-tests/test"
+    - SBT_CMD="akka-http-xml/test"
+    - SBT_CMD="akka-parsing/test"
+
 # Increasing ReservedCodeCacheSize minimizes scala compiler-interface compile times
 script:
-  - sbt -J-XX:ReservedCodeCacheSize=256M test
+  - sbt -J-XX:ReservedCodeCacheSize=256M "$SBT_CMD"
 
   # Tricks to avoid unnecessary cache updates
   - find $HOME/.sbt -name "*.lock" | xargs rm
