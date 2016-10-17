@@ -136,6 +136,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
     val fullLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(Fusing.aggressive(
       Flow[HttpRequest]
+        //.watchTermination()(Keep.right)
         .viaMat(handler)(Keep.left)
         .watchTermination()(Keep.right)
         .joinMat(fuseServerLayer(settings, connectionContext, log))(Keep.left)))
@@ -146,6 +147,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     connections.mapAsyncUnordered(settings.maxConnections) {
       case incoming: Tcp.IncomingConnection ⇒
         try {
+          println("new map async unordered called")
           val layer =
             if (settings.remoteAddressHeader) fullLayer.addAttributes(HttpAttributes.remoteAddress(Some(incoming.remoteAddress)))
             else fullLayer

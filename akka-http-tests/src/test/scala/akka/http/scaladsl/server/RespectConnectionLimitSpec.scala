@@ -13,6 +13,8 @@ import akka.stream.scaladsl._
 import akka.testkit.TestKit
 import io.gatling.app.Gatling
 import io.gatling.core.scenario.{ Simulation ⇒ GatlingSim }
+import java.net.InetSocketAddress
+import java.nio.channels.SocketChannel
 import org.scalatest._
 import java.util.concurrent.atomic._
 import scala.concurrent._
@@ -50,14 +52,27 @@ class RespectConnectionLimitSpec extends AsyncWordSpec with Matchers with Before
           if (connectionCount.incrementAndGet > MaxConnections) {
             tooManyConnections.set(true)
           }
+          println(connectionCount.get)
           terminated.onComplete { _ ⇒
+            println("in onCOmplete")
             connectionCount.decrementAndGet()
           }
         }
 
       Http().bindAndHandle(handler, "localhost", 0).map { binding ⇒
-        Simulation.port = binding.localAddress.getPort
-        Gatling.fromArgs(Array("--mute", "--no-reports"), Some(classOf[Simulation.TooManyUsers].asInstanceOf[Class[GatlingSim]]))
+        //Simulation.port = binding.localAddress.getPort
+        //Gatling.fromArgs(Array("--mute", "--no-reports"), Some(classOf[Simulation.TooManyUsers].asInstanceOf[Class[GatlingSim]]))
+
+        val Array(c1, c2) = Array.fill(2)(SocketChannel.open(binding.localAddress))
+
+        Thread.sleep(1000)
+        println("will close now")
+        c1.close()
+        //c2.shutdownInput()
+        c2.close()
+
+        Thread.sleep(5000)
+
         tooManyConnections.get shouldBe false
       }
     }
@@ -68,7 +83,7 @@ class RespectConnectionLimitSpec extends AsyncWordSpec with Matchers with Before
 }
 
 object RespectConnectionLimitSpec {
-  final val MaxConnections = 2
+  final val MaxConnections = 1
 }
 
 object Simulation {
