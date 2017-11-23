@@ -10,32 +10,36 @@ import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.Route;
-import akka.http.javadsl.server.directives.FileInfo;
 import akka.http.javadsl.server.examples.simple.SimpleServerApp;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
+import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
+import akka.stream.javadsl.FileIO;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Sink;
+import akka.stream.scaladsl.Compression;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.function.Function;
 
 public class FileUploadHttpHttpsReceiver extends AllDirectives {
 
-  final Function<FileInfo, File> fileDestination = (info) -> {
-    try {
-      return File.createTempFile(info.getFileName(), ".tmp");
-    } catch (Exception e) {
-      return null;
-    }
-  };
-
   public Route createRoute() {
-    return storeUploadedFile("log", fileDestination, (info, file) -> {
-      // do something with the file and file metadata ...
-      System.out.println("Uploaded " + file.getAbsolutePath());
-      file.delete();
-      return complete(StatusCodes.OK);
-    });
+    return extractMaterializer((mat) ->
+      entity(Unmarshaller.entityToMultipartFormData(), (formData) ->
+        completeWithFutureStatus(
+          formData.getParts().mapAsync(1, (part) ->
+            part.getEntity().getDataBytes().via(Compression.gunzip(64 * 1024)).runWith(FileIO.toFile(File.createTempFile(part.getName(), ".tmp")), mat).thenApply((res) ->
+              Pair.create(part.getName(), res)
+            )
+          ).runWith(Sink.foreach((res) ->
+            System.out.println("File [" + res.first() + "] saved. Total bytes: [" + res.second().getCount() + "]")
+          ), mat).thenApply((done) ->
+            StatusCodes.OK
+          )
+        )
+      )
+    );
   }
 
   public static void main(String[] args) throws IOException {

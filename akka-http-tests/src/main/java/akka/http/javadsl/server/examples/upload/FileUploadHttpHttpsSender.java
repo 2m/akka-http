@@ -5,7 +5,8 @@ import akka.http.javadsl.Http;
 import akka.http.javadsl.HttpsConnectionContext;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.server.examples.simple.SimpleServerApp;
-import akka.stream.ActorMaterializer;
+import akka.stream.javadsl.FileIO;
+import akka.stream.scaladsl.Compression;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -15,7 +16,7 @@ public class FileUploadHttpHttpsSender {
 
   public static RequestEntity createFileUploadEntityFromFile(Path filePath) {
     return Multiparts.createFormDataFromParts(
-      Multiparts.createFormDataPartFromPath("log", ContentTypes.APPLICATION_OCTET_STREAM, filePath, 100000)
+      Multiparts.createFormDataBodyPart(filePath.getFileName().toString(), HttpEntities.createIndefiniteLength(ContentTypes.APPLICATION_OCTET_STREAM, FileIO.fromPath(filePath, 100000).via(Compression.gzip())))
     ).toEntity();
   }
 
