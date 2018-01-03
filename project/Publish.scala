@@ -1,7 +1,8 @@
 package akka
 
 import scala.language.postfixOps
-import sbt._, Keys._
+import sbt.{Def, _}
+import Keys._
 
 /**
  * For projects that are not published.
@@ -24,9 +25,20 @@ object Publish extends AutoPlugin {
   override def trigger = allRequirements
   override def requires = BintrayPlugin
 
+  trait Keys {
+    val publishRepo = settingKey[String]("The bintray repository name to publish artifacts to")
+  }
+  object autoImport extends Keys
+  import autoImport._
+
   override def projectSettings = Seq(
     bintrayOrganization := Some("akka"),
-    bintrayPackage := "com.typesafe.akka:akka-http_2.11"
+    bintrayPackage := "com.typesafe.akka:akka-http_2.11",
+    bintrayRepository := publishRepo.value
+  )
+
+  override def buildSettings = Seq(
+    publishRepo := "maven"
   )
 }
 
