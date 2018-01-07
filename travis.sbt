@@ -24,8 +24,11 @@ commands ++= Seq(
     import extracted._
 
     if (sys.env.getOrElse("TRAVIS_EVENT_TYPE", "") == "cron") {
+      val appended =
+        session.appendRaw(Global / publishRepo := "snapshots")
+
       val stateWithSnapshotsRepo =
-        append(ThisBuild / publishRepo := "snapshots", state)
+        sbt.internal.SessionSettings.reapply(appended, state)
 
       runAggregated(ThisBuild / publish, stateWithSnapshotsRepo)
     }

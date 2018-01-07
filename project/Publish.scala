@@ -1,8 +1,7 @@
 package akka
 
 import scala.language.postfixOps
-import sbt.{Def, _}
-import Keys._
+import sbt._, Keys._
 
 /**
  * For projects that are not published.
@@ -37,7 +36,7 @@ object Publish extends AutoPlugin {
     bintrayRepository := publishRepo.value
   )
 
-  override def buildSettings = Seq(
+  override def globalSettings = Seq(
     publishRepo := "maven"
   )
 }
